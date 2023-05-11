@@ -1,8 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 	"sort"
+	"strings"
 )
 
 type LoanData struct {
@@ -24,9 +27,16 @@ type Employee struct {
 
 // json structure
 type LoanRecord struct {
+	MonthDate string `json:"month_date"`
+	StartBalance int `json:"start_balance"`
+	EndBalance int `json:"end_balance"`
+	Borrowers []Borrower `json:"borrowers"`
 }
 
 type Borrower struct {
+	ID string `json:"id"`
+	Name string `json:"name"`
+	Total int `json:"total_loan"`
 }
 
 func FindEmployee(id string, employees []Employee) (Employee, bool) {
@@ -83,10 +93,30 @@ func GetEndBalanceAndBorrowers(data LoanData) (int, []Borrower) {
 }
 
 func LoanReport(data LoanData) LoanRecord {
+	if len(data.Data) != 0 {
+		loanRecord := LoanRecord{
+			StartBalance: data.StartBalance,
+		}
+		endBalance, borrowers := GetEndBalanceAndBorrowers(data)
+		date := strings.Split(data.Data[0].Date, "-")
+		loanRecord.MonthDate = fmt.Sprintf("%s %s", date[1], date[2])
+		loanRecord.EndBalance = endBalance
+		loanRecord.Borrowers = borrowers
+		return loanRecord
+	}
 	return LoanRecord{} // TODO: replace this
 }
 
 func RecordJSON(record LoanRecord, path string) error {
+	_, err := os.Stat(path)
+
+	if os.IsNotExist(err) {
+		f, _ := os.Create(path)
+		defer f.Close()
+		return nil
+	}
+	byteJSON, _ := json.Marshal(record)
+	_ = os.WriteFile(path, byteJSON, 0644)
 	return nil // TODO: replace this
 }
 
